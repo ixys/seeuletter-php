@@ -32,7 +32,7 @@ abstract class Resource implements ResourceInterface
     public function __construct(Seeuletter $seeuletter)
     {
         $this->seeuletter = $seeuletter;
-        $this->client = new Client(array('base_uri' => 'https://api.seeuletter.com/'));
+        $this->client = new Client(array('base_uri' => 'https://api.mysendingbox.fr/'));
     }
 
     public function all(array $query = array(), $includeMeta = false)

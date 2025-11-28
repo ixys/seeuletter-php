@@ -1,30 +1,36 @@
 {
-    "name": "seeuletter/seeuletter-php",
-    "type": "library",
-    "description": "Seeuletter.com API PHP wrapper.",
-    "keywords": ["seeuletter", "printing", "mailing", "api", "rest", "web service", "wrapper"],
-    "homepage": "https://www.seeuletter.com/",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Seeuletter",
-            "email": "hello@seeuletter.com",
-            "homepage": "https://www.seeuletter.com"
-        }
-    ],
-    "require": {
-        "php": ">=5.3.0",
-        "guzzlehttp/guzzle": "~6.0"
+  "name": "ixys/seeuletter-php",
+  "type": "library",
+  "description": "Seeuletter.com API PHP wrapper.",
+  "keywords": ["seeuletter", "printing", "mailing", "api", "rest", "web service", "wrapper"],
+  "homepage": "https://www.seeuletter.com/",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Seeuletter",
+      "email": "hello@seeuletter.com",
+      "homepage": "https://www.seeuletter.com"
     },
-    "autoload": {
-        "psr-0": {
-            "Seeuletter": "src/"
-        }
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
-        }
+    {
+      "name": "Julien SIMONCINI",
+      "email": "julien@ixys.dev",
+      "homepage": "https://julien.id",
+      "role": "Developer"
     }
+  ],
+  "require": {
+    "php": ">=5.3.0",
+    "guzzlehttp/guzzle": "~7.0"
+  },
+  "autoload": {
+    "psr-0": {
+      "Seeuletter": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    }
+  }
 }

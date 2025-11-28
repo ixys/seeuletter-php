@@ -1,0 +1,169 @@
+name: PHP Package - Tests & Release
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - master
+      - develop
+
+permissions:
+  contents: read
+  packages: write  # nécessaire pour GitHub Packages / GHCR
+
+env:
+  PACKAGIST_PACKAGE: "ixys/seeuletter-php"
+  GHCR_PACKAGE_NAME: "seeuletter-php"
+
+jobs:
+  tests:
+    name: Run tests (PHP)
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, pdo, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php-version }}-composer-
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist
+
+      - name: Run tests
+        run: |
+          if [ -f vendor/bin/phpunit ]; then
+            vendor/bin/phpunit
+          elif grep -q '"test"' composer.json; then
+            composer test
+          else
+            echo "Aucun test défini (phpunit ou script composer test)."
+          fi
+
+  build-package:
+    name: Build package archive
+    runs-on: ubuntu-latest
+    needs: tests
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install prod dependencies
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist
+
+      - name: Build ZIP artifact
+        run: |
+          mkdir -p dist
+          ZIP_NAME="${{ env.GHCR_PACKAGE_NAME }}-${GITHUB_REF_NAME}.zip"
+
+          # Archive du code (tu adaptes les exclusions selon ton besoin)
+          zip -r "dist/${ZIP_NAME}" . \
+            -x ".git/*" \
+               ".github/*" \
+               "dist/*" \
+               "node_modules/*" \
+               "*.log"
+
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+          echo "Package généré: dist/${ZIP_NAME}"
+
+      - name: Upload artifact (workflow only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-package-${{ github.ref_name }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  publish-packagist:
+    name: Notify Packagist
+    runs-on: ubuntu-latest
+    needs: build-package
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Trigger Packagist update
+        run: |
+          if [ -z "${{ secrets.PACKAGIST_USERNAME }}" ] || [ -z "${{ secrets.PACKAGIST_API_TOKEN }}" ]; then
+            echo "Secrets PACKAGIST_USERNAME ou PACKAGIST_API_TOKEN manquants."
+            exit 1
+          fi
+
+          echo "Mise à jour Packagist pour ${{ env.PACKAGIST_PACKAGE }}..."
+
+          curl -sS -X PUT "https://packagist.org/packages/${{ env.PACKAGIST_PACKAGE }}" \
+            -d "username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_API_TOKEN }}&update=1&autoUpdated=1"
+
+  publish-github-packages:
+    name: Publish to GitHub Packages (GHCR)
+    runs-on: ubuntu-latest
+    needs: build-package
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download built artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: php-package-${{ github.ref_name }}
+          path: dist
+
+      - name: Setup ORAS (for generic artifact in GHCR)
+        uses: oras-project/setup-oras@v1
+        with:
+          version: 1.2.2
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login \
+            --username "${{ github.repository_owner }}" \
+            --password-stdin ghcr.io
+
+      - name: Publish ZIP to GHCR (GitHub Packages)
+        run: |
+          ZIP_FILE="$(ls dist/*.zip | head -n1)"
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Aucun fichier ZIP trouvé dans dist/"
+            exit 1
+          fi
+
+          SLUG="${{ github.repository_owner }}/${{ env.GHCR_PACKAGE_NAME }}"
+          TAG="${GITHUB_REF_NAME}"
+
+          echo "Publication de $ZIP_FILE vers ghcr.io/${SLUG}:${TAG}"
+
+          oras push "ghcr.io/${SLUG}:${TAG}" \
+            --artifact-type "application/vnd.php.package" \
+            "$ZIP_FILE"
+
+          echo "Package disponible sur GitHub Packages via GHCR."
