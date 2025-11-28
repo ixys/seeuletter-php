@@ -1,8 +1,7 @@
 # seeuletter-php
 
-[![Packagist version](https://img.shields.io/packagist/v/seeuletter/seeuletter-php.svg)](https://github.com/seeuletter/seeuletter-php)
-[![Dependency Status](https://gemnasium.com/badges/github.com/seeuletter/seeuletter-php.svg)](https://gemnasium.com/github.com/seeuletter/seeuletter-php)
-
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ixys/seeuletter-php/php-package-release.yml?branch=master)
+[![Packagist version](https://img.shields.io/packagist/v/ixys/seeuletter-php.svg)](https://github.com/ixys/seeuletter-php)
 
 Seeuletter.com PHP Client is a simple but flexible wrapper for the [Seeuletter.com](https://www.seeuletter.com) API. See full Seeuletter.com documentation [here](https://docs.seeuletter.com/). For best results, be sure that you're using the latest version of the Seeuletter API and the latest version of the PHP wrapper.
 
@@ -38,7 +37,7 @@ The recommended way to install Seeuletter.com PHP Client is through [Composer](h
 curl -sS https://getcomposer.org/installer | php
 
 // Add Seeuletter.com PHP client as a dependency
-composer require seeuletter/seeuletter-php
+composer require ixys/seeuletter-php
 ```
 
 After installing, you need to require Composer's autoloader:
